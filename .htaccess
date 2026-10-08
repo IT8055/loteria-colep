@@ -1,0 +1,27 @@
+# Lotería Colep web server rules.
+
+Options -Indexes
+DirectoryIndex index.html
+
+<IfModule mod_mime.c>
+  AddType application/manifest+json .webmanifest
+  AddType image/svg+xml .svg
+</IfModule>
+
+# The database folder and any SQLite or log files are never served.
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteRule ^data(/|$) - [F,L]
+  RewriteRule \.(sqlite|sqlite3|db|db-wal|db-shm|sqlite-wal|sqlite-shm|md|log)$ - [F,L]
+  RewriteRule (^|/)(error_log|php_errorlog)$ - [F,L]
+</IfModule>
+
+# The service worker and the HTML must always be checked for updates.
+<IfModule mod_headers.c>
+  <FilesMatch "^(sw\.js|index\.html|manifest\.webmanifest)$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+  <FilesMatch "\.(css|js|png|svg)$">
+    Header set X-Content-Type-Options "nosniff"
+  </FilesMatch>
+</IfModule>

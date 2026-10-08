@@ -1,0 +1,734 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lotería Colep</title>
+<meta name="description" content="Lotería en vivo con aerosoles, latas, líneas de llenado e inteligencia artificial.">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#24124A">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Lotería">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@600;800;900&display=swap">
+<link rel="stylesheet" href="style.css?v=4">
+</head>
+<body class="mode-player">
+
+<div id="netPill" class="net-pill" hidden><span class="dot"></span><span data-i18n="reconnecting">Reconectando...</span></div>
+
+<header class="top">
+  <div class="brand">
+    <span class="brand-main">Lotería</span>
+    <span class="brand-sub">Colep</span>
+  </div>
+  <div class="tools">
+    <span id="roomTag" class="room-tag" hidden></span>
+    <button id="installBtn" class="pill-btn install-btn" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg><span data-i18n="install">Instalar</span></button>
+    <button id="rulesBtn" class="icon-btn rules-btn" type="button" data-rules>?</button>
+    <button id="muteBtn" class="icon-btn" type="button" aria-pressed="false"></button>
+    <div class="lang-toggle" role="group" aria-label="Idioma / Language">
+      <button type="button" data-lang="es">ES</button>
+      <button type="button" data-lang="en">EN</button>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <section id="screenJoin" class="screen" hidden>
+    <div class="join-card">
+      <div class="join-hero" id="joinHero"></div>
+      <h1 data-i18n="join_title">Únete al juego</h1>
+      <p class="muted" data-i18n="join_intro">Escanea el código del gritón o escribe el código de la sala.</p>
+      <form id="joinForm" autocomplete="off" novalidate>
+        <label for="joinCode" data-i18n="room_code">Código de sala</label>
+        <input id="joinCode" name="code" type="text" inputmode="text" autocapitalize="characters" spellcheck="false" maxlength="16" placeholder="SPRAY-42" required>
+        <label for="joinName" data-i18n="your_name">Nombre del jugador</label>
+        <input id="joinName" name="name" type="text" maxlength="20" autocomplete="nickname" required>
+        <p id="joinError" class="form-error" role="alert" hidden></p>
+        <button id="joinBtn" class="big-btn pink" type="submit" data-i18n="join_btn">¡Entrar!</button>
+      </form>
+      <p id="iosHint" class="ios-hint" hidden>
+        <span data-i18n="ios_install">Para instalar: toca Compartir y luego "Agregar a inicio".</span>
+        <button type="button" class="link-btn" id="iosHintClose" data-i18n="close">Cerrar</button>
+      </p>
+      <button type="button" class="rules-link" data-rules data-i18n="how_to_play">¿Cómo se juega?</button>
+      <a class="caller-link" href="?mode=caller" data-i18n="caller_link">¿Vas a cantar las cartas? Abre el modo gritón</a>
+    </div>
+  </section>
+
+  <section id="screenPlay" class="screen" hidden>
+    <div class="play-layout">
+      <div class="now">
+        <div class="flip small" id="playerFlip">
+          <div class="flip-inner"><div class="face face-front"></div><div class="face face-back"></div></div>
+        </div>
+        <div class="now-text">
+          <p class="now-label" id="playerNowLabel"></p>
+          <h2 class="now-name" id="playerNowName"></h2>
+          <p class="now-verse" id="playerNowVerse"></p>
+          <p class="now-meta"><span id="playerCount"></span> <span id="playerPlayers"></span> <span id="playerRoom" class="nw"></span></p>
+        </div>
+      </div>
+      <div class="board-wrap">
+        <div id="board" class="board" aria-label="Tablero"></div>
+      </div>
+    </div>
+    <div class="claim-bar">
+      <button id="leaveBtn" class="pill-btn ghost" type="button" data-i18n="leave">Salir</button>
+      <button id="claimBtn" class="big-btn claim" type="button" data-i18n="loteria_btn">¡Lotería!</button>
+    </div>
+  </section>
+
+  <section id="screenHost" class="screen" hidden>
+    <div class="join-card host-card">
+      <div class="join-hero" id="hostHero"></div>
+      <h1 data-i18n="host_title">Modo gritón</h1>
+      <p class="muted" data-i18n="host_intro">Tú cantas las cartas en la pantalla grande. Los jugadores se unen con su celular.</p>
+      <p id="hostError" class="form-error" role="alert" hidden></p>
+      <button id="createBtn" class="big-btn pink" type="button" data-i18n="create_room">Crear sala</button>
+      <button type="button" class="rules-link" data-rules data-i18n="how_to_play">¿Cómo se juega?</button>
+      <a class="caller-link" href="./" data-i18n="player_link">¿Vas a jugar? Entra como jugador</a>
+    </div>
+  </section>
+
+  <section id="screenLobby" class="screen" hidden>
+    <div class="lobby">
+      <div class="lobby-main">
+        <p class="lobby-label" data-i18n="room_code">Código de sala</p>
+        <div class="lobby-code" id="lobbyCode"></div>
+        <p class="lobby-url"><span data-i18n="or_visit">o entra a</span> <strong id="lobbyUrl"></strong></p>
+        <h2 class="lobby-players-title"><span data-i18n="players">Jugadores</span> <span class="count-badge" id="lobbyCount">0</span></h2>
+        <ul class="chips" id="lobbyPlayers"></ul>
+        <p class="muted" id="lobbyEmpty" data-i18n="no_players">Esperando jugadores...</p>
+        <button id="startBtn" class="big-btn pink" type="button" data-i18n="start">¡Empezar!</button>
+      </div>
+      <div class="lobby-qr">
+        <div class="qr-box" id="qrBox"></div>
+        <p data-i18n="scan_to_join">Escanea para jugar</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="screenCall" class="screen" hidden>
+    <div class="call-layout">
+      <div class="flip big" id="callerFlip">
+        <div class="flip-inner"><div class="face face-front"></div><div class="face face-back"></div></div>
+      </div>
+      <div class="call-info">
+        <p class="call-counter"><span id="callCounter">0 / 24</span></p>
+        <h2 class="call-name" id="callName"></h2>
+        <p class="call-verse" id="callVerse"></p>
+        <div class="call-actions">
+          <button id="nextBtn" class="big-btn pink huge" type="button" data-i18n="next_card">Siguiente carta</button>
+          <button id="newGameBtn" class="pill-btn ghost" type="button" data-i18n="new_game">Nuevo juego</button>
+          <button id="newRoomBtn" class="pill-btn ghost" type="button" hidden data-i18n="new_room">Sala nueva</button>
+        </div>
+        <p class="muted call-meta"><span id="callPlayers"></span> · <span id="callRoom"></span></p>
+      </div>
+    </div>
+    <div class="strip-wrap">
+      <p class="strip-title" data-i18n="cards_called">Cartas cantadas</p>
+      <div class="strip" id="strip"></div>
+    </div>
+  </section>
+
+</main>
+
+<div id="winOverlay" class="win-overlay" hidden>
+  <div class="win-box">
+    <p class="win-title" id="winTitle">¡LOTERÍA!</p>
+    <p class="win-names" id="winNames"></p>
+    <div class="board mini" id="winBoard"></div>
+    <div class="win-actions">
+      <div id="winCaller" class="win-caller" hidden>
+        <button id="winNewGame" class="big-btn pink" type="button">
+          <span data-i18n="play_again">Otra ronda</span>
+          <small data-i18n="play_again_sub">Mismos jugadores, tableros nuevos</small>
+        </button>
+        <button id="winNewRoom" class="big-btn turq" type="button" data-i18n="new_room">Sala nueva</button>
+      </div>
+      <button id="winClose" class="pill-btn" type="button" data-i18n="close">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<div id="rulesOverlay" class="rules-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="rulesTitle">
+  <div class="rules-box">
+    <button id="rulesClose" class="rules-x" type="button">&times;</button>
+    <div id="rulesBody"></div>
+    <div class="rules-actions"><button id="rulesOk" class="big-btn pink" type="button" data-i18n="rules_ok">¡Órale, a jugar!</button></div>
+  </div>
+</div>
+
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+<canvas id="confetti" class="confetti" aria-hidden="true"></canvas>
+
+<script>
+/*
+ * The 24 cards of Lotería Colep, drawn as inline SVG in a folk art style.
+ * Each card has an id, a number, and a name and verse in Mexican Spanish and in English.
+ * Art is drawn in a 200 by 200 box; cardSVG() frames it with papel picado, a number and a name banner.
+ */
+(function () {
+  'use strict';
+
+  var INK = '#2B1B5A';
+  var PINK = '#FF2E88';
+  var YEL = '#FFD60A';
+  var TURQ = '#00C2C7';
+  var ORA = '#FF7A00';
+  var PUR = '#7B2CBF';
+  var GRN = '#2BAE66';
+  var RED = '#E63946';
+  var SIL = '#C9D6DF';
+  var WHT = '#FFFFFF';
+  var CREAM = '#FFF4DC';
+  var SKIN = '#F2B38A';
+  var SKIN2 = '#C68B59';
+  var SKIN3 = '#8D5A3B';
+  var WOOD = '#C68B59';
+  var WOOD2 = '#8B5A2B';
+  var BOX = '#E5AE6E';
+
+  function n(v) { return Math.round(v * 10) / 10; }
+
+  function star(cx, cy, r, fill, points) {
+    var p = points || 5;
+    var d = '';
+    for (var i = 0; i < p * 2; i += 1) {
+      var rad = i % 2 === 0 ? r : r * 0.45;
+      var a = Math.PI * i / p - Math.PI / 2;
+      d += (i === 0 ? 'M' : 'L') + n(cx + rad * Math.cos(a)) + ' ' + n(cy + rad * Math.sin(a)) + ' ';
+    }
+    return '<path d="' + d + 'Z" fill="' + fill + '" stroke-width="3"/>';
+  }
+
+  function sparkle(cx, cy, r, fill) {
+    return '<path d="M' + cx + ' ' + (cy - r) + ' Q' + cx + ' ' + cy + ' ' + (cx + r) + ' ' + cy +
+      ' Q' + cx + ' ' + cy + ' ' + cx + ' ' + (cy + r) + ' Q' + cx + ' ' + cy + ' ' + (cx - r) + ' ' + cy +
+      ' Q' + cx + ' ' + cy + ' ' + cx + ' ' + (cy - r) + ' Z" fill="' + fill + '" stroke-width="2.5"/>';
+  }
+
+  function spiral(cx, cy, maxR, turns) {
+    var d = 'M' + cx + ' ' + cy;
+    var steps = turns * 24;
+    for (var i = 1; i <= steps; i += 1) {
+      var t = i / steps;
+      var a = t * turns * Math.PI * 2;
+      d += ' L' + n(cx + maxR * t * Math.cos(a)) + ' ' + n(cy + maxR * t * Math.sin(a));
+    }
+    return '<path d="' + d + '" fill="none" stroke-width="3"/>';
+  }
+
+  function dot(cx, cy, r, fill) {
+    return '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="' + fill + '" stroke="none"/>';
+  }
+
+  var CARDS = [
+    {
+      id: 1, number: 1,
+      es: { name: 'El Aerosol', verse: 'Tantito pssst y huele a gloria: ¡el aerosol que hizo historia!' },
+      en: { name: 'The Aerosol', verse: 'Psssst! It is not gossip, it is not a ghost, it is the aerosol, and it sprays the most.' },
+      art: '<circle cx="40" cy="40" r="11" fill="' + TURQ + '"/>' + '<circle cx="20" cy="26" r="7" fill="' + YEL + '"/>' +
+        '<circle cx="26" cy="58" r="6" fill="' + PINK + '"/><circle cx="8" cy="46" r="4" fill="' + TURQ + '"/>' +
+        '<circle cx="52" cy="18" r="5" fill="' + ORA + '"/><path d="M84 30 l-16 -6 M84 38 l-18 6" stroke-width="3"/>' +
+        '<path d="M80 84 Q80 52 115 50 Q150 52 150 84 Z" fill="' + SIL + '"/>' +
+        '<rect x="103" y="42" width="24" height="10" rx="3" fill="' + SIL + '"/>' +
+        '<path d="M100 44 V24 Q100 18 106 18 H124 Q130 18 130 24 V44 Z" fill="' + TURQ + '"/>' +
+        '<rect x="86" y="27" width="16" height="9" rx="2" fill="' + YEL + '"/>' +
+        '<rect x="80" y="74" width="70" height="112" rx="8" fill="' + PINK + '"/>' +
+        '<rect x="80" y="112" width="70" height="34" fill="' + YEL + '"/>' +
+        '<circle cx="115" cy="129" r="11" fill="' + ORA + '"/>' + dot(115, 129, 4, WHT) +
+        dot(96, 129, 3, PINK) + dot(134, 129, 3, PINK) +
+        '<rect x="77" y="180" width="76" height="12" rx="5" fill="' + SIL + '"/>' +
+        '<path d="M92 154 v18" stroke="' + WHT + '" stroke-width="5"/><path d="M92 88 v14" stroke="' + WHT + '" stroke-width="5"/>' +
+        sparkle(178, 60, 10, YEL) + sparkle(176, 150, 7, TURQ)
+    },
+    {
+      id: 2, number: 2,
+      es: { name: 'La Lata', verse: 'Ni de chiles ni de atún: esta lata aguanta más presión que tú.' },
+      en: { name: 'The Can', verse: 'Shiny and round and under pressure all day, the can understands your job in every way.' },
+      art: '<path d="M30 76 l-12 8 l12 8 l-12 8" fill="none" stroke="' + RED + '"/><path d="M170 76 l12 8 l-12 8 l12 8" fill="none" stroke="' + RED + '"/>' +
+        '<path d="M50 60 V168 A50 14 0 0 0 150 168 V60" fill="' + TURQ + '"/>' +
+        '<ellipse cx="100" cy="60" rx="50" ry="14" fill="' + SIL + '"/>' +
+        '<ellipse cx="100" cy="60" rx="38" ry="9" fill="#E8EEF2" stroke-width="3"/>' +
+        '<rect x="86" y="50" width="28" height="13" rx="6" fill="' + SIL + '" stroke-width="3"/>' + dot(95, 56.5, 3, INK) +
+        '<path d="M50 96 H150 V142 H50 Z" fill="' + YEL + '"/>' +
+        '<circle cx="80" cy="112" r="6" fill="' + INK + '"/><circle cx="120" cy="112" r="6" fill="' + INK + '"/>' +
+        dot(82, 110, 2, WHT) + dot(122, 110, 2, WHT) +
+        '<path d="M88 126 Q100 136 112 126" fill="none"/>' +
+        dot(70, 126, 6, PINK) + dot(130, 126, 6, PINK) +
+        '<path d="M100 172 l-11 -11 a7 7 0 0 1 11 -9 a7 7 0 0 1 11 9 z" fill="' + PINK + '" stroke-width="3"/>' +
+        '<path d="M62 76 v12" stroke="' + WHT + '" stroke-width="5"/>' +
+        star(20, 160, 10, YEL) + star(182, 150, 8, PINK)
+    },
+    {
+      id: 3, number: 3,
+      es: { name: 'La Válvula', verse: 'Abre y cierra sin rajarse: la válvula sí sabe cuándo callarse.' },
+      en: { name: 'The Valve', verse: 'It knows when to open, it knows when to close, the valve has the manners that nobody shows.' },
+      art: '<rect x="2" y="132" width="196" height="34" fill="' + SIL + '"/>' +
+        '<path d="M8 140 h20 M172 140 h20" stroke="' + WHT + '" stroke-width="4"/>' +
+        '<rect x="38" y="122" width="14" height="54" rx="3" fill="' + TURQ + '"/>' +
+        '<rect x="148" y="122" width="14" height="54" rx="3" fill="' + TURQ + '"/>' +
+        '<rect x="62" y="116" width="76" height="66" rx="14" fill="' + PINK + '"/>' +
+        dot(76, 130, 3, INK) + dot(124, 130, 3, INK) + dot(76, 168, 3, INK) + dot(124, 168, 3, INK) +
+        '<path d="M88 150 h24" stroke="' + YEL + '" stroke-width="6"/>' +
+        '<rect x="84" y="88" width="32" height="30" fill="' + ORA + '"/>' +
+        '<rect x="95" y="48" width="10" height="42" fill="' + SIL + '"/>' +
+        '<path d="M100 10 V82 M64 46 H136 M75 21 L125 71 M125 21 L75 71" stroke-width="10"/>' +
+        '<path d="M100 10 V82 M64 46 H136 M75 21 L125 71 M125 21 L75 71" stroke="' + RED + '" stroke-width="4"/>' +
+        '<circle cx="100" cy="46" r="36" fill="none" stroke-width="14"/>' +
+        '<circle cx="100" cy="46" r="36" fill="none" stroke="' + RED + '" stroke-width="7"/>' +
+        '<circle cx="100" cy="46" r="10" fill="' + YEL + '"/>' +
+        '<path d="M150 182 Q143 194 150 198 Q157 194 150 182 Z" fill="' + TURQ + '" stroke-width="3"/>' +
+        sparkle(20, 40, 9, YEL) + sparkle(180, 96, 8, TURQ)
+    },
+    {
+      id: 4, number: 4,
+      es: { name: 'El Robot', verse: 'No pide aguinaldo ni toma siesta: el robot ni se entera de la fiesta.' },
+      en: { name: 'The Robot', verse: 'No lunch, no sick days, no moaning at all: the robot is HR\'s favourite of all.' },
+      art: '<path d="M100 30 V16" /><circle cx="100" cy="12" r="7" fill="' + PINK + '"/>' +
+        '<rect x="44" y="50" width="13" height="26" rx="4" fill="' + YEL + '"/><rect x="143" y="50" width="13" height="26" rx="4" fill="' + YEL + '"/>' +
+        '<rect x="55" y="28" width="90" height="68" rx="14" fill="' + TURQ + '"/>' +
+        '<circle cx="80" cy="57" r="12" fill="' + WHT + '"/><circle cx="120" cy="57" r="12" fill="' + WHT + '"/>' +
+        '<circle cx="82" cy="58" r="5" fill="' + INK + '"/><circle cx="122" cy="58" r="5" fill="' + INK + '"/>' +
+        '<rect x="77" y="75" width="46" height="13" rx="4" fill="' + WHT + '"/><path d="M89 75 v13 M100 75 v13 M111 75 v13" stroke-width="3"/>' +
+        '<rect x="90" y="96" width="20" height="10" fill="' + SIL + '"/>' +
+        '<path d="M52 122 Q28 120 22 96" fill="none" stroke-width="10"/><path d="M148 122 Q172 132 172 160" fill="none" stroke-width="10"/>' +
+        '<circle cx="21" cy="90" r="10" fill="' + YEL + '"/><circle cx="172" cy="166" r="10" fill="' + YEL + '"/>' +
+        '<rect x="50" y="106" width="100" height="74" rx="12" fill="' + PINK + '"/>' +
+        '<rect x="66" y="118" width="68" height="34" rx="6" fill="' + YEL + '"/>' +
+        '<circle cx="82" cy="135" r="7" fill="' + TURQ + '"/><circle cx="100" cy="135" r="7" fill="' + ORA + '"/><circle cx="118" cy="135" r="7" fill="' + GRN + '"/>' +
+        '<path d="M70 166 h14 M92 166 h36" stroke="' + WHT + '" stroke-width="5"/>' +
+        '<rect x="66" y="180" width="22" height="16" rx="3" fill="' + SIL + '"/><rect x="112" y="180" width="22" height="16" rx="3" fill="' + SIL + '"/>' +
+        sparkle(180, 30, 9, YEL) + sparkle(24, 150, 7, TURQ)
+    },
+    {
+      id: 5, number: 5,
+      es: { name: 'El Prompt', verse: 'Escríbele bonito y con paciencia: el prompt es puro arte y poquita ciencia.' },
+      en: { name: 'The Prompt', verse: 'Be specific, say please, and add "step by step": the prompt is a spell that needs plenty of prep.' },
+      art: '<rect x="12" y="32" width="176" height="128" rx="12" fill="' + INK + '"/>' +
+        '<path d="M12 44 A12 12 0 0 1 24 32 H176 A12 12 0 0 1 188 44 V56 H12 Z" fill="' + PUR + '"/>' +
+        dot(30, 44, 5, PINK) + dot(46, 44, 5, YEL) + dot(62, 44, 5, TURQ) +
+        '<text x="26" y="98" font-family="monospace" font-size="30" font-weight="700" fill="' + YEL + '" stroke="none">&gt;</text>' +
+        '<path d="M56 86 H140" stroke="' + TURQ + '" stroke-width="6"/><path d="M56 102 H112" stroke="' + PINK + '" stroke-width="6"/>' +
+        '<path d="M30 126 H70" stroke="' + WHT + '" stroke-width="6"/>' +
+        '<rect x="78" y="116" width="14" height="22" fill="' + YEL + '" stroke="none"><animate attributeName="opacity" values="1;1;0;0" dur="1s" repeatCount="indefinite"/></rect>' +
+        '<path d="M112 196 L166 142" stroke-width="10"/><path d="M112 196 L166 142" stroke="' + ORA + '" stroke-width="4"/>' +
+        star(170, 138, 18, YEL) +
+        sparkle(26, 14, 9, YEL) + sparkle(130, 16, 7, PINK) + sparkle(40, 182, 8, TURQ) + sparkle(190, 186, 6, PINK)
+    },
+    {
+      id: 6, number: 6,
+      es: { name: 'La Junta', verse: 'Pudo ser un correo, pero no: la junta de dos horas ya empezó.' },
+      en: { name: 'The Meeting', verse: 'This could have been an email, but here we all sit: the meeting is on hour three and nobody can quit.' },
+      art: '<circle cx="104" cy="34" r="26" fill="' + WHT + '"/><path d="M104 34 V16 M104 34 H118" stroke-width="4"/>' + dot(104, 34, 3, INK) +
+        '<path d="M104 10 v4 M128 34 h-4 M104 58 v-4 M80 34 h4" stroke-width="3"/>' +
+        '<path d="M8 58 H62 A8 8 0 0 1 70 66 V82 A8 8 0 0 1 62 90 H34 L24 100 V90 H16 A8 8 0 0 1 8 82 V66 A8 8 0 0 1 16 58 Z" fill="' + WHT + '"/>' +
+        '<text x="39" y="80" text-anchor="middle" font-family="\'Lilita One\', sans-serif" font-size="15" fill="' + INK + '" stroke="none">bla bla</text>' +
+        '<path d="M26 150 A26 30 0 0 1 78 150 Z" fill="' + TURQ + '"/><circle cx="52" cy="110" r="15" fill="' + SKIN + '"/>' +
+        dot(47, 108, 2.5, INK) + dot(57, 108, 2.5, INK) + '<ellipse cx="52" cy="117" rx="4" ry="3" fill="' + INK + '" stroke="none"/>' +
+        '<path d="M74 150 A26 30 0 0 1 126 150 Z" fill="' + PINK + '"/><circle cx="100" cy="112" r="15" fill="' + SKIN3 + '"/>' +
+        '<path d="M93 112 h5 M102 112 h5" stroke-width="3"/>' +
+        '<text x="122" y="96" font-family="\'Lilita One\', sans-serif" font-size="16" fill="' + PUR + '" stroke="none">Z</text>' +
+        '<text x="134" y="80" font-family="\'Lilita One\', sans-serif" font-size="12" fill="' + PUR + '" stroke="none">z</text>' +
+        '<path d="M122 150 A26 30 0 0 1 174 150 Z" fill="' + PUR + '"/><circle cx="148" cy="110" r="15" fill="' + SKIN2 + '"/>' +
+        dot(143, 108, 2.5, INK) + dot(153, 108, 2.5, INK) + '<path d="M143 117 h10" stroke-width="3"/>' +
+        '<ellipse cx="100" cy="158" rx="92" ry="22" fill="' + ORA + '"/>' +
+        '<path d="M34 176 V196 M166 176 V196" stroke-width="6"/>' +
+        '<rect x="62" y="146" width="12" height="12" rx="2" fill="' + WHT + '" stroke-width="3"/><rect x="128" y="148" width="12" height="12" rx="2" fill="' + WHT + '" stroke-width="3"/>' +
+        '<path d="M86 156 h28" stroke="' + WHT + '" stroke-width="4"/>'
+    },
+    {
+      id: 7, number: 7,
+      es: { name: 'El Excel', verse: 'Con tantas pestañas y celdas pintadas, el Excel del jefe no cuadra nada.' },
+      en: { name: 'The Spreadsheet', verse: 'Forty tabs, merged cells and a macro from hell: the spreadsheet is fine, as far as we can tell.' },
+      art: function (lang) {
+        return '<rect x="20" y="22" width="160" height="160" rx="8" fill="' + WHT + '"/>' +
+          '<rect x="60" y="78" width="40" height="28" fill="' + PINK + '" stroke="none"/>' +
+          '<rect x="100" y="50" width="40" height="28" fill="' + TURQ + '" stroke="none"/>' +
+          '<rect x="140" y="106" width="40" height="28" fill="' + YEL + '" stroke="none"/>' +
+          '<rect x="20" y="134" width="40" height="28" fill="' + ORA + '" stroke="none"/>' +
+          '<path d="M20 30 A8 8 0 0 1 28 22 H172 A8 8 0 0 1 180 30 V50 H20 Z" fill="' + GRN + '"/>' +
+          '<path d="M60 22 V182 M100 22 V182 M140 22 V182 M20 78 H180 M20 106 H180 M20 134 H180 M20 162 H180" stroke-width="2"/>' +
+          '<rect x="20" y="22" width="160" height="160" rx="8" fill="none"/>' +
+          '<g transform="rotate(-8 100 130)"><rect x="34" y="110" width="132" height="40" rx="8" fill="' + RED + '"/>' +
+          '<text x="100" y="139" text-anchor="middle" font-family="\'Lilita One\', sans-serif" font-size="25" fill="' + WHT + '" stroke="none">' + (lang === 'es' ? '#¡REF!' : '#REF!') + '</text></g>' +
+          sparkle(186, 16, 9, YEL) + sparkle(14, 190, 7, PINK)
+      }
+    },
+    {
+      id: 8, number: 8,
+      es: { name: 'El Montacargas', verse: 'Pip, pip, pip, ¡hazte a un lado!, que viene el montacargas bien cargado.' },
+      en: { name: 'The Forklift', verse: 'Beep, beep, beep, get out of the way, the forklift has pallets and will not stop today.' },
+      art: '<rect x="32" y="22" width="12" height="160" fill="' + SIL + '"/>' +
+        '<rect x="6" y="152" width="44" height="8" fill="' + SIL + '"/>' +
+        '<rect x="6" y="142" width="40" height="10" fill="' + WOOD + '"/>' +
+        '<rect x="9" y="100" width="34" height="42" fill="' + PINK + '"/><path d="M26 100 V142" stroke="' + YEL + '" stroke-width="6"/>' +
+        '<path d="M66 122 V50 H142 L152 122" fill="none" stroke-width="6"/>' +
+        '<rect x="60" y="42" width="98" height="11" rx="3" fill="' + TURQ + '"/>' +
+        '<circle cx="110" cy="30" r="7" fill="' + ORA + '"/><path d="M96 20 l-6 -6 M124 20 l6 -6 M110 14 v-8" stroke-width="3"/>' +
+        '<circle cx="106" cy="88" r="13" fill="' + SKIN2 + '"/><path d="M92 86 A14 14 0 0 1 120 86 Z" fill="' + YEL + '"/>' +
+        dot(102, 92, 2, INK) +
+        '<path d="M46 122 H160 A12 12 0 0 1 172 134 V172 H46 Z" fill="' + YEL + '"/>' +
+        '<path d="M150 122 H180 A12 12 0 0 1 192 134 V172 H150 Z" fill="' + ORA + '"/>' +
+        '<path d="M60 140 h70" stroke="' + INK + '" stroke-width="3"/>' +
+        '<circle cx="80" cy="174" r="20" fill="' + INK + '"/><circle cx="80" cy="174" r="8" fill="' + SIL + '"/>' +
+        '<circle cx="156" cy="174" r="20" fill="' + INK + '"/><circle cx="156" cy="174" r="8" fill="' + SIL + '"/>' +
+        '<text x="150" y="20" font-family="\'Lilita One\', sans-serif" font-size="16" fill="' + RED + '" stroke="none">pip!</text>'
+    },
+    {
+      id: 9, number: 9,
+      es: { name: 'El Café', verse: 'Negro, amargo y recalentado: el café de la oficina te tiene enamorado.' },
+      en: { name: 'The Coffee', verse: 'Burnt, bitter and brewed back in May, the office coffee still gets you through the day.' },
+      art: '<ellipse cx="100" cy="182" rx="76" ry="13" fill="' + TURQ + '"/>' +
+        '<path d="M142 92 Q182 90 178 124 Q174 152 136 150" fill="none" stroke-width="15"/>' +
+        '<path d="M142 92 Q182 90 178 124 Q174 152 136 150" fill="none" stroke="#C1440E" stroke-width="7"/>' +
+        '<path d="M42 72 H158 Q156 140 134 176 H66 Q44 140 42 72 Z" fill="#C1440E"/>' +
+        '<ellipse cx="100" cy="72" rx="58" ry="13" fill="#7A2E10"/><ellipse cx="100" cy="73" rx="48" ry="8" fill="#3E1F0D" stroke-width="2"/>' +
+        '<path d="M50 100 Q58 92 66 100 T82 100 T98 100 T114 100 T130 100 T146 100" fill="none" stroke="' + WHT + '" stroke-width="4"/>' +
+        '<circle cx="100" cy="134" r="12" fill="' + YEL + '" stroke-width="3"/>' + dot(100, 134, 4, PINK) +
+        dot(100, 115, 5, WHT) + dot(100, 153, 5, WHT) + dot(81, 134, 5, WHT) + dot(119, 134, 5, WHT) +
+        dot(66, 124, 3, YEL) + dot(134, 124, 3, YEL) + dot(70, 150, 3, YEL) + dot(130, 150, 3, YEL) +
+        '<path d="M78 52 Q66 40 78 28 Q90 16 78 4" fill="none" stroke="' + PINK + '" stroke-width="5"/>' +
+        '<path d="M102 52 Q90 40 102 28 Q114 16 102 4" fill="none" stroke="' + TURQ + '" stroke-width="5"/>' +
+        '<path d="M126 52 Q114 40 126 28 Q138 16 126 4" fill="none" stroke="' + YEL + '" stroke-width="5"/>'
+    },
+    {
+      id: 10, number: 10,
+      es: { name: 'La Fórmula', verse: 'Una pizca de esto y un chorrito de aquello: la fórmula secreta te deja el pelo bello.' },
+      en: { name: 'The Formula', verse: 'A pinch of this and a splash of that: the secret formula keeps your hair from going flat.' },
+      art: '<path d="M80 30 H120 V80 L165 170 A10 10 0 0 1 156 184 H44 A10 10 0 0 1 35 170 L80 80 Z" fill="#E6FAFB"/>' +
+        '<path d="M60 120 H140 L165 170 A10 10 0 0 1 156 184 H44 A10 10 0 0 1 35 170 Z" fill="' + PINK + '"/>' +
+        '<path d="M60 120 Q80 112 100 120 T140 120" fill="none" stroke="' + WHT + '" stroke-width="3"/>' +
+        '<path d="M80 30 H120 V80 L165 170 A10 10 0 0 1 156 184 H44 A10 10 0 0 1 35 170 L80 80 Z" fill="none"/>' +
+        '<rect x="74" y="22" width="52" height="12" rx="4" fill="' + SIL + '"/>' +
+        '<path d="M80 96 h10 M74 108 h10" stroke-width="3"/>' +
+        dot(80, 152, 7, WHT) + dot(108, 140, 4, WHT) + dot(124, 164, 8, WHT) + dot(96, 170, 4, WHT) +
+        '<circle cx="100" cy="62" r="6" fill="' + TURQ + '" stroke-width="3"/><circle cx="110" cy="10" r="6" fill="' + YEL + '" stroke-width="3"/>' +
+        '<circle cx="90" cy="2" r="4" fill="' + PINK + '" stroke-width="2.5"/>' +
+        sparkle(164, 62, 12, YEL) + sparkle(30, 70, 9, TURQ) + star(178, 128, 9, ORA)
+    },
+    {
+      id: 11, number: 11,
+      es: { name: 'El Chatbot', verse: 'Te responde todo con gran seguridad: el chatbot inventa con naturalidad.' },
+      en: { name: 'The Chatbot', verse: 'It answers in seconds with total conviction: the chatbot is confident, the facts are pure fiction.' },
+      art: '<path d="M100 32 V16"/><circle cx="100" cy="12" r="7" fill="' + YEL + '"/>' +
+        '<path d="M20 32 H180 A16 16 0 0 1 196 48 V126 A16 16 0 0 1 180 142 H82 L50 170 V142 H20 A16 16 0 0 1 4 126 V48 A16 16 0 0 1 20 32 Z" fill="' + TURQ + '"/>' +
+        '<rect x="58" y="58" width="26" height="32" rx="12" fill="' + WHT + '"/><rect x="116" y="58" width="26" height="32" rx="12" fill="' + WHT + '"/>' +
+        dot(73, 76, 6, INK) + dot(131, 76, 6, INK) + dot(75, 73, 2, WHT) + dot(133, 73, 2, WHT) +
+        '<path d="M76 108 Q100 128 124 108" fill="none" stroke-width="5"/>' +
+        dot(50, 104, 8, PINK) + dot(150, 104, 8, PINK) +
+        '<rect x="118" y="152" width="70" height="36" rx="18" fill="' + WHT + '"/>' +
+        '<circle cx="138" cy="170" r="5" fill="' + INK + '" stroke="none"><animate attributeName="opacity" values="1;0.2;1" dur="1.2s" repeatCount="indefinite"/></circle>' +
+        '<circle cx="153" cy="170" r="5" fill="' + INK + '" stroke="none"><animate attributeName="opacity" values="0.2;1;0.2" dur="1.2s" repeatCount="indefinite"/></circle>' +
+        '<circle cx="168" cy="170" r="5" fill="' + INK + '" stroke="none"><animate attributeName="opacity" values="1;0.2;1" dur="1.2s" begin="0.4s" repeatCount="indefinite"/></circle>' +
+        sparkle(20, 186, 9, YEL) + sparkle(170, 12, 8, PINK)
+    },
+    {
+      id: 12, number: 12,
+      es: { name: 'El Lunes', verse: 'Llegó el lunes, nadie lo invitó, y otra vez el fin de semana se acabó.' },
+      en: { name: 'Monday', verse: 'Here comes Monday, uninvited and loud, the grumpiest guest in the whole office crowd.' },
+      art: function (lang) {
+        return '<rect x="30" y="32" width="140" height="152" rx="10" fill="' + WHT + '"/>' +
+          '<path d="M30 42 A10 10 0 0 1 40 32 H160 A10 10 0 0 1 170 42 V72 H30 Z" fill="' + RED + '"/>' +
+          '<text x="92" y="62" text-anchor="middle" font-family="\'Lilita One\', sans-serif" font-size="' + (lang === 'es' ? 23 : 20) + '" fill="' + WHT + '" stroke="none">' + (lang === 'es' ? 'LUNES' : 'MONDAY') + '</text>' +
+          '<rect x="58" y="20" width="10" height="24" rx="5" fill="' + SIL + '"/><rect x="132" y="20" width="10" height="24" rx="5" fill="' + SIL + '"/>' +
+          '<path d="M62 96 L90 106 M138 96 L110 106" stroke-width="7"/>' +
+          '<circle cx="78" cy="118" r="7" fill="' + INK + '"/><circle cx="122" cy="118" r="7" fill="' + INK + '"/>' +
+          '<path d="M74 160 Q100 138 126 160" fill="none" stroke-width="7"/>' +
+          '<path d="M140 30 A12 12 0 0 1 154 14 A15 15 0 0 1 182 18 A11 11 0 0 1 188 38 H146 A9 9 0 0 1 140 30 Z" fill="#8E9AAF"/>' +
+          '<path d="M164 38 L154 54 H164 L156 70 L176 48 H166 L172 38 Z" fill="' + YEL + '" stroke-width="3"/>' +
+          '<path d="M16 120 Q10 132 16 136 Q22 132 16 120 Z" fill="' + TURQ + '" stroke-width="3"/>'
+      }
+    },
+    {
+      id: 13, number: 13,
+      es: { name: 'La Mezcla', verse: 'Revuelve y revuelve sin parar: la mezcla es como el chisme, nunca deja de girar.' },
+      en: { name: 'The Mix', verse: 'Round and round until perfectly blended: the mix, like this meeting, is never quite ended.' },
+      art: '<path d="M44 176 L36 196 M156 176 L164 196" stroke-width="7"/>' +
+        '<path d="M30 52 H170 V146 Q170 188 100 188 Q30 188 30 146 Z" fill="' + SIL + '"/>' +
+        '<path d="M37 92 H163 V146 Q163 180 100 180 Q37 180 37 146 Z" fill="' + PINK + '"/>' +
+        '<path d="M60 136 A40 14 0 1 0 140 136 A30 10 0 1 0 80 136 A20 7 0 1 0 120 136" fill="none" stroke="' + YEL + '" stroke-width="5"/>' +
+        '<path d="M52 112 Q76 102 100 112 T148 112" fill="none" stroke="' + TURQ + '" stroke-width="5"/>' +
+        '<rect x="96" y="34" width="8" height="118" fill="' + SIL + '"/>' +
+        '<path d="M74 152 H126" stroke-width="12"/><path d="M74 152 H126" stroke="' + YEL + '" stroke-width="5"/>' +
+        '<rect x="24" y="44" width="152" height="14" rx="5" fill="' + TURQ + '"/>' +
+        '<rect x="78" y="8" width="44" height="28" rx="6" fill="' + PUR + '"/>' + dot(90, 22, 4, YEL) + dot(110, 22, 4, GRN) +
+        '<path d="M64 14 Q56 22 64 30 M136 14 Q144 22 136 30" fill="none" stroke-width="3"/>' +
+        sparkle(184, 90, 9, YEL) + sparkle(14, 96, 7, ORA)
+    },
+    {
+      id: 14, number: 14,
+      es: { name: 'El Llenado', verse: 'Lata tras lata, rapidito y sin pausa: el llenado no se detiene por ninguna causa.' },
+      en: { name: 'The Filling Line', verse: 'Can after can in a shiny parade, the filling line works faster than you get paid.' },
+      art: '<rect x="8" y="8" width="184" height="36" rx="8" fill="' + PUR + '"/>' +
+        dot(24, 26, 5, GRN) + dot(40, 26, 5, YEL) + '<path d="M120 26 h56" stroke="' + WHT + '" stroke-width="4"/>' +
+        '<path d="M32 44 H48 L44 62 H36 Z" fill="' + SIL + '"/><path d="M92 44 H108 L104 62 H96 Z" fill="' + SIL + '"/><path d="M152 44 H168 L164 62 H156 Z" fill="' + SIL + '"/>' +
+        '<rect x="37" y="62" width="6" height="34" fill="' + TURQ + '" stroke="none"/>' +
+        '<rect x="97" y="62" width="6" height="34" fill="' + TURQ + '" stroke="none"/>' +
+        '<path d="M160 70 Q155 78 160 82 Q165 78 160 70 Z" fill="' + TURQ + '" stroke-width="2.5"/>' +
+        '<rect x="20" y="96" width="40" height="66" rx="6" fill="' + PINK + '"/><ellipse cx="40" cy="98" rx="20" ry="6" fill="' + SIL + '"/>' +
+        '<rect x="80" y="96" width="40" height="66" rx="6" fill="' + YEL + '"/><ellipse cx="100" cy="98" rx="20" ry="6" fill="' + SIL + '"/>' +
+        '<rect x="140" y="96" width="40" height="66" rx="6" fill="' + TURQ + '"/><ellipse cx="160" cy="98" rx="20" ry="6" fill="' + SIL + '"/>' +
+        '<path d="M28 118 v26 M88 118 v26 M148 118 v26" stroke="' + WHT + '" stroke-width="5"/>' +
+        '<rect x="4" y="162" width="192" height="18" rx="9" fill="' + INK + '"/>' +
+        dot(22, 171, 5, SIL) + dot(52, 171, 5, SIL) + dot(82, 171, 5, SIL) + dot(112, 171, 5, SIL) + dot(142, 171, 5, SIL) + dot(172, 171, 5, SIL) +
+        '<path d="M60 192 l10 -5 l-10 -5 M90 192 l10 -5 l-10 -5 M120 192 l10 -5 l-10 -5" fill="none" stroke="' + ORA + '" stroke-width="4"/>'
+    },
+    {
+      id: 15, number: 15,
+      es: { name: 'El Sellado', verse: 'Ni una gota ni un chisme se le escapa: el sellado aprieta como abrazo de mamá.' },
+      en: { name: 'The Seal', verse: 'Tight as a drum and leak free all day, the seal keeps secrets better than HR, they say.' },
+      art: '<rect x="86" y="0" width="28" height="32" fill="' + SIL + '"/>' +
+        '<path d="M58 30 H142 V54 L130 68 H70 L58 54 Z" fill="' + ORA + '"/>' +
+        '<path d="M72 42 h56" stroke="' + WHT + '" stroke-width="4"/>' +
+        '<path d="M44 36 V58 M156 36 V58 M34 46 V64 M166 46 V64" stroke-width="4"/>' +
+        '<rect x="82" y="72" width="36" height="12" rx="4" fill="' + SIL + '"/>' +
+        '<path d="M50 112 Q50 82 100 80 Q150 82 150 112 Z" fill="' + SIL + '"/>' +
+        '<rect x="50" y="104" width="100" height="94" rx="10" fill="' + TURQ + '"/>' +
+        '<circle cx="100" cy="150" r="26" fill="' + YEL + '"/>' +
+        '<path d="M87 150 L96 159 L114 141" fill="none" stroke-width="7"/>' +
+        '<path d="M64 120 v60" stroke="' + WHT + '" stroke-width="5"/>' +
+        sparkle(32, 92, 10, YEL) + sparkle(168, 92, 10, PINK) + star(176, 166, 9, YEL) + star(24, 160, 8, PINK)
+    },
+    {
+      id: 16, number: 16,
+      es: { name: 'El Impulso', verse: 'Un dedazo y sale volando: el impulso, como tú el viernes a las cinco escapando.' },
+      en: { name: 'The Push', verse: 'One little push and off it flies, like you at five on a Friday, no goodbyes.' },
+      art: star(100, 70, 44, YEL, 12) +
+        '<circle cx="52" cy="66" r="9" fill="' + TURQ + '"/><circle cx="34" cy="56" r="6" fill="' + PINK + '"/>' +
+        '<circle cx="22" cy="74" r="5" fill="' + YEL + '"/><circle cx="40" cy="84" r="4" fill="' + ORA + '"/>' +
+        '<path d="M50 124 Q50 90 100 88 Q150 90 150 124 Z" fill="' + SIL + '"/>' +
+        '<rect x="80" y="64" width="40" height="26" rx="6" fill="' + PINK + '"/>' +
+        '<rect x="64" y="70" width="18" height="9" rx="2" fill="' + YEL + '"/>' +
+        '<rect x="50" y="116" width="100" height="84" rx="10" fill="' + PUR + '"/>' +
+        '<path d="M50 146 H150" stroke="' + YEL + '" stroke-width="10"/>' + star(100, 172, 12, YEL) +
+        '<g transform="rotate(32 106 60)"><rect x="88" y="-14" width="36" height="76" rx="18" fill="' + SKIN + '"/>' +
+        '<path d="M96 40 Q106 32 116 40 V52 Q106 58 96 52 Z" fill="#FFE1D6" stroke-width="3"/></g>' +
+        '<path d="M150 16 l14 -8 M160 32 l16 -2 M146 2 l6 -8" stroke-width="4"/>'
+    },
+    {
+      id: 17, number: 17,
+      es: { name: 'El Lanzamiento', verse: 'Cuenta regresiva y todos aplaudiendo: el lanzamiento era ayer y aún seguimos corriendo.' },
+      en: { name: 'The Launch', verse: 'Three, two, one... and the date slipped again: the launch is next quarter, though nobody knows when.' },
+      art: '<circle cx="62" cy="184" r="13" fill="' + WHT + '"/><circle cx="138" cy="184" r="13" fill="' + WHT + '"/>' +
+        '<circle cx="44" cy="176" r="9" fill="' + WHT + '"/><circle cx="156" cy="176" r="9" fill="' + WHT + '"/>' +
+        '<g transform="rotate(12 100 110)">' +
+        '<path d="M76 150 Q100 214 124 150 Z" fill="' + ORA + '"/><path d="M88 150 Q100 188 112 150 Z" fill="' + YEL + '" stroke="none"/>' +
+        '<path d="M70 118 L46 150 V162 L70 150 Z" fill="' + RED + '"/><path d="M130 118 L154 150 V162 L130 150 Z" fill="' + RED + '"/>' +
+        '<path d="M70 62 Q70 30 100 20 Q130 30 130 62 Z" fill="' + TURQ + '"/>' +
+        '<rect x="70" y="56" width="60" height="98" rx="10" fill="' + PINK + '"/>' +
+        '<circle cx="100" cy="82" r="12" fill="#CFF6FF"/><path d="M95 78 q4 -4 8 0" fill="none" stroke="' + WHT + '" stroke-width="3"/>' +
+        '<rect x="70" y="104" width="60" height="16" fill="' + YEL + '"/>' + dot(86, 112, 3, PINK) + dot(100, 112, 3, PINK) + dot(114, 112, 3, PINK) +
+        '</g>' +
+        star(28, 40, 12, YEL) + star(170, 26, 9, TURQ) + sparkle(172, 92, 9, PINK) + sparkle(24, 110, 8, YEL) + dot(150, 56, 3, WHT) + dot(46, 74, 3, WHT)
+    },
+    {
+      id: 18, number: 18,
+      es: { name: 'La Tapa', verse: 'Chiquita y redonda, siempre se pierde: la tapa aparece cuando ya no la quieres.' },
+      en: { name: 'The Cap', verse: 'Small, round and always the first thing missing: the cap reappears when you have finished the hissing.' },
+      art: '<ellipse cx="100" cy="184" rx="64" ry="9" fill="none" stroke-width="3" stroke-dasharray="10 8"/>' +
+        '<path d="M50 162 V92 Q50 50 100 50 Q150 50 150 92 V162 Z" fill="' + PINK + '"/>' +
+        '<path d="M68 100 V156 M84 94 V156 M100 92 V156 M116 94 V156 M132 100 V156" stroke-width="3"/>' +
+        '<path d="M68 72 Q82 60 100 60" fill="none" stroke="' + WHT + '" stroke-width="6"/>' +
+        '<rect x="44" y="152" width="112" height="18" rx="6" fill="' + YEL + '"/>' +
+        dot(62, 161, 3, PINK) + dot(82, 161, 3, PINK) + dot(100, 161, 3, PINK) + dot(118, 161, 3, PINK) + dot(138, 161, 3, PINK) +
+        '<text x="14" y="62" font-family="\'Lilita One\', sans-serif" font-size="40" fill="' + TURQ + '" stroke="' + INK + '" stroke-width="2.5">?</text>' +
+        '<text x="160" y="44" font-family="\'Lilita One\', sans-serif" font-size="32" fill="' + YEL + '" stroke="' + INK + '" stroke-width="2.5">?</text>' +
+        '<text x="166" y="132" font-family="\'Lilita One\', sans-serif" font-size="26" fill="' + ORA + '" stroke="' + INK + '" stroke-width="2.5">?</text>' +
+        sparkle(26, 132, 8, YEL)
+    },
+    {
+      id: 19, number: 19,
+      es: { name: 'El Casco', verse: 'Amarillo, duro y nada a la moda: el casco te salva aunque arruine tu peinado de boda.' },
+      en: { name: 'The Hard Hat', verse: 'Not stylish, not comfy, and yellow as cheese, but the hard hat says safety comes first, if you please.' },
+      art: '<ellipse cx="100" cy="152" rx="92" ry="20" fill="#F2B700"/>' +
+        '<path d="M28 150 Q28 52 100 48 Q172 52 172 150 Z" fill="' + YEL + '"/>' +
+        '<path d="M86 52 Q86 100 84 150 H116 Q114 100 114 52 Q100 46 86 52 Z" fill="#FFE45C"/>' +
+        '<path d="M58 74 Q48 104 50 146 M142 74 Q152 104 150 146" fill="none" stroke-width="3"/>' +
+        '<circle cx="62" cy="114" r="16" fill="' + TURQ + '"/>' +
+        dot(62, 104, 4, WHT) + dot(62, 124, 4, WHT) + dot(52, 114, 4, WHT) + dot(72, 114, 4, WHT) + dot(62, 114, 4, PINK) +
+        '<path d="M128 66 Q146 76 150 98" fill="none" stroke="' + WHT + '" stroke-width="6"/>' +
+        '<path d="M20 150 Q100 170 180 150" fill="none" stroke-width="3"/>' +
+        star(30, 34, 11, PINK) + star(172, 26, 9, TURQ) + sparkle(100, 16, 9, ORA) + sparkle(18, 188, 7, PINK) + sparkle(182, 188, 7, TURQ)
+    },
+    {
+      id: 20, number: 20,
+      es: { name: 'La Tarima', verse: 'Cargada hasta el tope y nadie la mima: la que todo lo aguanta es la tarima.' },
+      en: { name: 'The Pallet', verse: 'Stacked to the sky and never once thanked, the pallet holds up the whole place, to be frank.' },
+      art: '<rect x="18" y="98" width="78" height="54" fill="' + BOX + '"/><path d="M57 98 V152" stroke="' + PINK + '" stroke-width="7"/>' +
+        '<rect x="100" y="98" width="82" height="54" fill="' + BOX + '"/><path d="M141 98 V152" stroke="' + TURQ + '" stroke-width="7"/>' +
+        '<rect x="34" y="48" width="74" height="50" fill="' + BOX + '"/><path d="M71 48 V98" stroke="' + YEL + '" stroke-width="7"/>' +
+        '<rect x="112" y="58" width="56" height="40" fill="' + BOX + '"/><path d="M118 70 h18" stroke-width="3"/><path d="M118 80 h28" stroke-width="3"/>' +
+        '<g transform="rotate(10 82 26)"><rect x="58" y="6" width="50" height="40" fill="' + BOX + '"/><path d="M83 6 V46" stroke="' + PINK + '" stroke-width="6"/></g>' +
+        '<path d="M30 140 V118 M30 118 l-6 6 M30 118 l6 6 M44 140 V118 M44 118 l-6 6 M44 118 l6 6" stroke-width="3"/>' +
+        '<rect x="10" y="152" width="180" height="11" fill="' + WOOD + '"/>' +
+        '<rect x="16" y="163" width="26" height="16" fill="' + WOOD2 + '"/><rect x="87" y="163" width="26" height="16" fill="' + WOOD2 + '"/><rect x="158" y="163" width="26" height="16" fill="' + WOOD2 + '"/>' +
+        '<rect x="10" y="179" width="180" height="11" fill="' + WOOD + '"/>' +
+        '<path d="M6 132 Q1 142 6 146 Q11 142 6 132 Z" fill="' + TURQ + '" stroke-width="2.5"/>' +
+        '<path d="M194 124 Q189 134 194 138 Q199 134 194 124 Z" fill="' + TURQ + '" stroke-width="2.5"/>'
+    },
+    {
+      id: 21, number: 21,
+      es: { name: 'La Alucinación', verse: 'Te jura que es cierto con toda la emoción, pero se lo inventó: es la alucinación.' },
+      en: { name: 'The Hallucination', verse: 'It swears it is a fact, with a source and a date, but the hallucination just made it up, mate.' },
+      art: '<path d="M8 50 A26 26 0 0 1 60 50" fill="none" stroke="' + PINK + '" stroke-width="7"/>' +
+        '<path d="M16 50 A18 18 0 0 1 52 50" fill="none" stroke="' + YEL + '" stroke-width="7"/>' +
+        '<path d="M24 50 A10 10 0 0 1 44 50" fill="none" stroke="' + TURQ + '" stroke-width="7"/>' +
+        '<circle cx="164" cy="38" r="14" fill="' + ORA + '"/><ellipse cx="164" cy="38" rx="26" ry="7" fill="none" stroke="' + TURQ + '" stroke-width="4" transform="rotate(-18 164 38)"/>' +
+        '<path d="M40 200 Q40 164 100 164 Q160 164 160 200 Z" fill="' + PINK + '"/>' +
+        '<rect x="82" y="148" width="36" height="18" fill="' + SIL + '"/>' +
+        '<path d="M100 64 L92 52 L106 44 L98 30" fill="none" stroke-width="4"/><circle cx="98" cy="26" r="7" fill="' + YEL + '"/>' +
+        '<rect x="42" y="62" width="116" height="90" rx="22" fill="' + PUR + '"/>' +
+        '<circle cx="76" cy="100" r="19" fill="' + WHT + '"/><circle cx="124" cy="100" r="19" fill="' + WHT + '"/>' +
+        spiral(76, 100, 15, 3) + spiral(124, 100, 15, 3) +
+        '<path d="M74 134 Q80 128 86 134 T98 134 T110 134 T122 134 T128 132" fill="none" stroke="' + YEL + '" stroke-width="4"/>' +
+        star(26, 112, 9, YEL) + sparkle(178, 112, 9, PINK) + sparkle(178, 168, 7, YEL) + sparkle(20, 160, 7, TURQ)
+    },
+    {
+      id: 22, number: 22,
+      es: { name: 'La Nube', verse: 'Todo lo guardas allá arriba en la nube: nadie sabe dónde está, pero el recibo sube.' },
+      en: { name: 'The Cloud', verse: 'Your files float up to the cloud, out of sight; nobody knows where, but the invoice is right.' },
+      art: '<path d="M40 128 A28 28 0 0 1 46 74 A36 36 0 0 1 114 56 A30 30 0 0 1 162 80 A25 25 0 0 1 162 128 Z" fill="' + WHT + '"/>' +
+        '<path d="M70 96 Q78 88 86 96 M114 96 Q122 88 130 96" fill="none" stroke-width="4"/>' +
+        '<path d="M90 108 Q100 118 110 108" fill="none" stroke-width="4"/>' +
+        dot(66, 108, 7, PINK) + dot(134, 108, 7, PINK) +
+        '<path d="M100 70 v-14 M94 62 l6 -6 l6 6" fill="none" stroke="' + TURQ + '" stroke-width="4"/>' +
+        '<circle cx="56" cy="156" r="14" fill="' + YEL + '"/><text x="56" y="162" text-anchor="middle" font-family="\'Lilita One\', sans-serif" font-size="17" fill="' + INK + '" stroke="none">$</text>' +
+        '<circle cx="102" cy="178" r="14" fill="' + YEL + '"/><text x="102" y="184" text-anchor="middle" font-family="\'Lilita One\', sans-serif" font-size="17" fill="' + INK + '" stroke="none">$</text>' +
+        '<circle cx="148" cy="152" r="14" fill="' + YEL + '"/><text x="148" y="158" text-anchor="middle" font-family="\'Lilita One\', sans-serif" font-size="17" fill="' + INK + '" stroke="none">$</text>' +
+        '<path d="M78 140 v10 M126 140 v14 M170 176 v10 M34 182 v8" stroke="' + TURQ + '" stroke-width="4"/>' +
+        sparkle(26, 30, 9, YEL) + sparkle(182, 36, 8, PINK)
+    },
+    {
+      id: 23, number: 23,
+      es: { name: 'La Auditoría', verse: 'Llegó la auditoría y todos a correr, a buscar el papel que nunca se llegó a hacer.' },
+      en: { name: 'The Audit', verse: 'The audit is here, so look busy and smile, and find that lost form at the bottom of the pile.' },
+      art: '<rect x="30" y="28" width="112" height="156" rx="10" fill="' + WOOD + '"/>' +
+        '<rect x="42" y="46" width="88" height="128" fill="' + WHT + '"/>' +
+        '<rect x="62" y="18" width="48" height="22" rx="6" fill="' + SIL + '"/>' +
+        '<rect x="52" y="60" width="14" height="14" rx="2" fill="' + WHT + '" stroke-width="3"/><path d="M54 66 l4 5 l9 -11" fill="none" stroke="' + GRN + '" stroke-width="4"/><path d="M74 67 H116" stroke-width="3"/>' +
+        '<rect x="52" y="88" width="14" height="14" rx="2" fill="' + WHT + '" stroke-width="3"/><path d="M54 94 l4 5 l9 -11" fill="none" stroke="' + GRN + '" stroke-width="4"/><path d="M74 95 H110" stroke-width="3"/>' +
+        '<rect x="52" y="116" width="14" height="14" rx="2" fill="' + WHT + '" stroke-width="3"/><path d="M54 118 l10 10 M64 118 l-10 10" stroke="' + RED + '" stroke-width="4"/><path d="M74 123 H114" stroke-width="3"/>' +
+        '<rect x="52" y="144" width="14" height="14" rx="2" fill="' + WHT + '" stroke-width="3"/><path d="M74 151 H104" stroke-width="3"/>' +
+        '<path d="M160 146 L188 174" stroke-width="16"/><path d="M160 146 L188 174" stroke="' + PINK + '" stroke-width="8"/>' +
+        '<circle cx="140" cy="124" r="32" fill="#BFF3F5" fill-opacity="0.7" stroke-width="7"/>' +
+        '<circle cx="140" cy="124" r="32" fill="none" stroke="' + TURQ + '" stroke-width="3"/>' +
+        '<path d="M124 110 Q132 102 142 102" fill="none" stroke="' + WHT + '" stroke-width="5"/>' +
+        '<text x="134" y="140" font-family="\'Lilita One\', sans-serif" font-size="30" fill="' + RED + '" stroke="none">?</text>' +
+        sparkle(176, 40, 10, YEL) + sparkle(16, 110, 7, PINK)
+    },
+    {
+      id: 24, number: 24,
+      es: { name: 'La Etiqueta', verse: 'Con letra chiquita y en veinte idiomas: la etiqueta te avisa y tú ni te asomas.' },
+      en: { name: 'The Label', verse: 'Twenty languages in print the size of a flea: the label says everything, and nobody reads it, not me.' },
+      art: '<g transform="rotate(-8 100 100)">' +
+        '<path d="M38 100 Q6 70 30 30 Q46 8 70 18" fill="none" stroke-width="4"/>' +
+        '<path d="M64 40 H170 A10 10 0 0 1 180 50 V150 A10 10 0 0 1 170 160 H64 L20 120 V80 Z" fill="' + YEL + '"/>' +
+        '<circle cx="40" cy="100" r="8" fill="' + CREAM + '"/>' +
+        '<path d="M110 54 L138 102 H82 Z" fill="' + ORA + '"/>' +
+        '<path d="M110 70 V88" stroke-width="5"/>' + dot(110, 95, 3, INK) +
+        '<path d="M68 116 H168 M68 124 H160 M68 132 H170 M68 140 H148 M68 148 H164" stroke-width="2.5"/>' +
+        '<path d="M150 56 h18 M150 64 h14 M150 72 h18" stroke="' + PINK + '" stroke-width="4"/>' +
+        '</g>' +
+        sparkle(176, 176, 9, PINK) + sparkle(24, 172, 7, TURQ) + star(180, 22, 9, PINK)
+    }
+  ];
+
+  var ACCENTS = [PINK, TURQ, PUR, ORA, GRN];
+  var PICADO = [PINK, YEL, TURQ, ORA, PUR, GRN];
+  var FONT = 'font-family="\'Lilita One\', Impact, sans-serif"';
+
+  function esc(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  /* Papel picado: five cut paper flags hanging from a string along the top of the card. */
+  function picado(id) {
+    var out = '<path d="M10 17 Q125 27 240 17" fill="none" stroke="' + INK + '" stroke-width="3"/>';
+    for (var i = 0; i < 5; i += 1) {
+      var x = 19 + i * 43;
+      var c = PICADO[(id + i) % PICADO.length];
+      var d = 'M' + x + ' 19 H' + (x + 40) + ' V50';
+      for (var k = 1; k <= 8; k += 1) {
+        d += ' L' + (x + 40 - 5 * k) + ' ' + (k % 2 ? 56 : 50);
+      }
+      out += '<path d="' + d + ' Z" fill="' + c + '" stroke="' + INK + '" stroke-width="2.5" stroke-linejoin="round"/>' +
+        '<circle cx="' + (x + 20) + '" cy="32" r="5" fill="' + CREAM + '"/>' +
+        '<path d="M' + (x + 8) + ' 27 l4 4 l-4 4 l-4 -4 Z M' + (x + 32) + ' 27 l4 4 l-4 4 l-4 -4 Z" fill="' + CREAM + '"/>' +
+        '<circle cx="' + (x + 12) + '" cy="44" r="1.8" fill="' + CREAM + '"/><circle cx="' + (x + 20) + '" cy="45" r="1.8" fill="' + CREAM + '"/><circle cx="' + (x + 28) + '" cy="44" r="1.8" fill="' + CREAM + '"/>';
+    }
+    return out;
+  }
+
+  var artCache = {};
+
+  function cardSVG(card, lang) {
+    var L = card[lang] || card.es;
+    var accent = ACCENTS[(card.id - 1) % ACCENTS.length];
+    var key = card.id + lang;
+    if (!artCache[key]) {
+      artCache[key] = typeof card.art === 'function' ? card.art(lang) : card.art;
+    }
+    var fit = L.name.length > 12 ? ' textLength="190" lengthAdjust="spacingAndGlyphs"' : '';
+    return '<svg class="card-svg" viewBox="0 0 250 375" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="' + esc(card.number + '. ' + L.name) + '">' +
+      '<rect x="3" y="3" width="244" height="369" rx="16" fill="' + CREAM + '" stroke="' + INK + '" stroke-width="6"/>' +
+      '<rect x="11" y="11" width="228" height="353" rx="10" fill="none" stroke="' + accent + '" stroke-width="4"/>' +
+      '<circle cx="125" cy="196" r="90" fill="' + accent + '" fill-opacity="0.16"/>' +
+      '<circle cx="125" cy="196" r="101" fill="none" stroke="' + accent + '" stroke-opacity="0.35" stroke-width="12" stroke-dasharray="5 10"/>' +
+      picado(card.id) +
+      '<g transform="translate(25 96)" stroke="' + INK + '" stroke-width="4" stroke-linejoin="round" stroke-linecap="round">' + artCache[key] + '</g>' +
+      '<circle cx="34" cy="76" r="18" fill="' + YEL + '" stroke="' + INK + '" stroke-width="4"/>' +
+      '<text x="34" y="84" text-anchor="middle" ' + FONT + ' font-size="22" fill="' + INK + '">' + card.number + '</text>' +
+      '<path d="M16 312 H234 L223 333 L234 354 H16 L27 333 Z" fill="' + accent + '" stroke="' + INK + '" stroke-width="4" stroke-linejoin="round"/>' +
+      '<text x="125" y="343" text-anchor="middle" ' + FONT + ' font-size="27" fill="#FFFFFF" stroke="' + INK + '" stroke-width="5" paint-order="stroke" stroke-linejoin="round"' + fit + '>' + esc(L.name) + '</text>' +
+      '</svg>';
+  }
+
+  function cardBackSVG() {
+    var pattern = '';
+    for (var row = 0; row < 7; row += 1) {
+      for (var col = 0; col < 5; col += 1) {
+        var cx = 40 + col * 42 + (row % 2 ? 21 : 0);
+        var cy = 46 + row * 47;
+        if (cx > 220) { continue; }
+        pattern += star(cx, cy, 9, row % 2 ? TURQ : YEL).replace('stroke-width="3"', 'stroke="' + INK + '" stroke-width="2"');
+      }
+    }
+    return '<svg class="card-svg" viewBox="0 0 250 375" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+      '<rect x="3" y="3" width="244" height="369" rx="16" fill="' + PINK + '" stroke="' + INK + '" stroke-width="6"/>' +
+      '<rect x="16" y="16" width="218" height="343" rx="10" fill="' + PUR + '" stroke="' + YEL + '" stroke-width="5"/>' +
+      pattern +
+      '<circle cx="125" cy="188" r="78" fill="' + YEL + '" stroke="' + INK + '" stroke-width="5"/>' +
+      '<circle cx="125" cy="188" r="66" fill="none" stroke="' + PINK + '" stroke-width="6" stroke-dasharray="4 8"/>' +
+      star(125, 188, 50, PINK, 8).replace('stroke-width="3"', 'stroke="' + INK + '" stroke-width="4"') +
+      '<circle cx="125" cy="188" r="16" fill="' + TURQ + '" stroke="' + INK + '" stroke-width="4"/>' +
+      '<text x="125" y="96" text-anchor="middle" ' + FONT + ' font-size="40" fill="#FFFFFF" stroke="' + INK + '" stroke-width="6" paint-order="stroke">LOTERÍA</text>' +
+      '<text x="125" y="310" text-anchor="middle" ' + FONT + ' font-size="34" fill="' + YEL + '" stroke="' + INK + '" stroke-width="6" paint-order="stroke">COLEP</text>' +
+      '</svg>';
+  }
+
+  var byId = {};
+  CARDS.forEach(function (c) { byId[c.id] = c; });
+
+  window.LOTERIA = {
+    cards: CARDS,
+    byId: byId,
+    cardSVG: cardSVG,
+    cardBackSVG: cardBackSVG
+  };
+})();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
+<script src="app.js?v=4" defer></script>
+</body>
+</html>

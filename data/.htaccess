@@ -1,0 +1,5 @@
+# Block all web access to the SQLite database.
+Deny from all
+<IfModule mod_authz_core.c>
+  Require all denied
+</IfModule>

@@ -1,0 +1,10 @@
+# SQLite database and its journal files, created on the server at runtime
+data/*.sqlite
+data/*.sqlite-*
+
+# Server and editor clutter
+error_log
+php_errorlog
+.DS_Store
+Thumbs.db
+.vscode/
