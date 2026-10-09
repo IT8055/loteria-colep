@@ -42,8 +42,9 @@
       new_game: 'Nuevo juego',
       play_again: 'Otra ronda',
       play_again_sub: 'Mismos jugadores, tableros nuevos',
-      new_room: 'Sala nueva',
-      confirm_room: '¿Crear una sala nueva? Los jugadores tendrán que escanear el código nuevo.',
+      reset: 'Reiniciar',
+      reset_sub: 'Sala y código nuevos',
+      confirm_reset: '¿Reiniciar todo? Se borra esta sala con todos sus jugadores y se abre una sala nueva con otro código.',
       cards_called: 'Cartas cantadas',
       confirm_new: '¿Empezar un juego nuevo con los mismos jugadores? Todos reciben tablero nuevo.',
       leave: 'Salir',
@@ -70,7 +71,7 @@
       board: 'Tablero',
       err_network: 'No hay conexión. Inténtalo otra vez.',
       err_bad_code: 'Ese código no se ve bien. Debe ser algo como SPRAY-42.',
-      err_room_not_found: 'No encontramos esa sala. Revisa el código o pide uno nuevo.',
+      err_room_not_found: 'Esa sala ya no existe o el código está mal. Pídele el código al gritón.',
       err_bad_name: 'Escribe tu nombre.',
       err_name_too_long: 'El nombre puede tener máximo 20 letras.',
       err_name_taken: 'Ya hay alguien con ese nombre en la sala. Prueba otro.',
@@ -112,8 +113,9 @@
       new_game: 'New game',
       play_again: 'Play again',
       play_again_sub: 'Same players, new boards',
-      new_room: 'New room',
-      confirm_room: 'Create a new room? Players will need to scan the new code.',
+      reset: 'Reset',
+      reset_sub: 'New room and code',
+      confirm_reset: 'Reset everything? This room and all its players are removed, and a new room opens with a new code.',
       cards_called: 'Cards called',
       confirm_new: 'Start a new game with the same players? Everyone gets a new board.',
       leave: 'Leave',
@@ -140,7 +142,7 @@
       board: 'Board',
       err_network: 'No connection. Please try again.',
       err_bad_code: 'That code does not look right. It should be like SPRAY-42.',
-      err_room_not_found: 'We could not find that room. Check the code or ask for a new one.',
+      err_room_not_found: 'That room no longer exists, or the code is wrong. Ask the caller for the code.',
       err_bad_name: 'Please type your name.',
       err_name_too_long: 'Names can be at most 20 characters.',
       err_name_taken: 'Someone in this room already has that name. Try another.',
@@ -185,7 +187,8 @@
         'Abre el modo gritón en la computadora del proyector y pulsa "Crear sala".',
         'Espera a que aparezcan los nombres de todos y pulsa "¡Empezar!".',
         'Pulsa "Siguiente carta" para cantar cada carta. También funcionan el control de presentaciones, las flechas, la barra espaciadora y Enter.',
-        'Cuando alguien gane, elige "Otra ronda" para jugar otra vez con los mismos jugadores (todos reciben tablero nuevo) o "Sala nueva" para empezar con un código nuevo.'
+        'Cuando alguien gane, elige "Otra ronda" para jugar otra vez con los mismos jugadores (todos reciben tablero nuevo).',
+        '"Reiniciar" borra la sala y a todos sus jugadores y abre una sala nueva con otro código. Lo puedes usar en cualquier momento.'
       ]
     },
     en: {
@@ -214,7 +217,8 @@
         'Open caller mode on the projector laptop and press "Create room".',
         'Wait until everyone\'s name has appeared, then press "Start!".',
         'Press "Next card" to call each card. A presentation clicker works too, as do the arrow keys, Space and Enter.',
-        'When someone wins, choose "Play again" for another round with the same players (everyone gets a new board), or "New room" to start over with a new code.'
+        'When someone wins, choose "Play again" for another round with the same players (everyone gets a new board).',
+        '"Reset" removes the room and all its players and opens a new room with a new code. You can use it at any time.'
       ]
     }
   };
@@ -780,7 +784,7 @@
       if (err.code === 'not_player' || err.code === 'room_not_found') {
         if (Player.poll) { Player.poll.stop(); Player.poll = null; }
         session.del('loteria.player');
-        $('joinCode').value = Player.code;
+        $('joinCode').value = err.code === 'room_not_found' ? '' : Player.code;
         Player.showJoin(errText(err));
       }
     },
@@ -903,7 +907,7 @@
 
   var Caller = {
     code: '', token: '', round: -1, position: 0, status: '', called: [],
-    count: -1, players: [], shownPos: 0, winRound: 0, poll: null, busy: false, sig: '',
+    count: -1, players: [], shownPos: 0, winRound: 0, poll: null, busy: false, sig: '', resetting: false,
 
     start: function () {
       document.body.className = 'mode-caller';
@@ -960,6 +964,7 @@
     },
 
     onPollError: function (err) {
+      if (Caller.resetting) { return; }
       if (err.code === 'room_not_found' || err.code === 'not_caller') {
         if (Caller.poll) { Caller.poll.stop(); Caller.poll = null; }
         session.del('loteria.caller');
@@ -1004,6 +1009,8 @@
         pc: Caller.count
       }).then(function (r) {
         if (code === Caller.code) { Caller.apply(r); }
+      }, function (err) {
+        if (code === Caller.code && !Caller.resetting) { throw err; }
       });
     },
 
@@ -1075,7 +1082,6 @@
       var done = Caller.position >= 24;
       $('nextBtn').disabled = Caller.busy || Caller.status === 'finished' || done;
       $('nextBtn').textContent = done ? t('deck_done') : t('next_card');
-      $('newRoomBtn').hidden = !(Caller.status === 'finished' || done);
     },
 
     next: function () {
@@ -1119,13 +1125,14 @@
       });
     },
 
-    /* A brand new room with a new code; players scan the new QR code to join. */
-    newRoom: function (e) {
-      if (!window.confirm(t('confirm_room'))) { return; }
-      var btn = e && e.currentTarget;
-      if (btn) { btn.disabled = true; }
-      api('create_room', {}).then(function (r) {
-        if (Caller.poll) { Caller.poll.stop(); Caller.poll = null; }
+    /* Deletes this room and its players, then opens a brand new room with a new code. */
+    reset: function () {
+      if (Caller.resetting || !window.confirm(t('confirm_reset'))) { return; }
+      Caller.resetting = true;
+      if (Caller.poll) { Caller.poll.stop(); Caller.poll = null; }
+      var btns = ['resetBtn', 'lobbyResetBtn', 'winReset'].map($);
+      btns.forEach(function (b) { b.disabled = true; });
+      api('reset_room', { code: Caller.code, caller_token: Caller.token }).then(function (r) {
         Caller.code = r.code;
         Caller.token = r.caller_token;
         Caller.position = 0;
@@ -1145,8 +1152,10 @@
         show('screenLobby');
       }, function (err) {
         toast(errText(err), false, 2600);
+        Caller.enter();
       }).then(function () {
-        if (btn) { btn.disabled = false; }
+        Caller.resetting = false;
+        btns.forEach(function (b) { b.disabled = false; });
       });
     }
   };
@@ -1211,8 +1220,9 @@
   $('nextBtn').addEventListener('click', Caller.next);
   $('newGameBtn').addEventListener('click', Caller.newGame);
   $('winNewGame').addEventListener('click', Caller.newGame);
-  $('winNewRoom').addEventListener('click', Caller.newRoom);
-  $('newRoomBtn').addEventListener('click', Caller.newRoom);
+  $('winReset').addEventListener('click', Caller.reset);
+  $('resetBtn').addEventListener('click', Caller.reset);
+  $('lobbyResetBtn').addEventListener('click', Caller.reset);
 
   document.addEventListener('keydown', function (e) {
     if (MODE !== 'caller' || !Caller.code || !$('winOverlay').hidden || !$('rulesOverlay').hidden) { return; }

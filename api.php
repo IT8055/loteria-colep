@@ -275,10 +275,9 @@ function load_player(PDO $pdo, string $code, array $in): array
 
 /* Actions */
 
-function action_create_room(): void
+/* Clears out expired rooms, then opens a new room. Returns its code and caller token. */
+function open_room(PDO $pdo): array
 {
-    $pdo = db();
-
     $cutoff = time() - ROOM_TTL;
     $old = 'SELECT code FROM rooms WHERE created_at < ?';
     $pdo->prepare("DELETE FROM claims WHERE room_code IN ($old)")->execute([$cutoff]);
@@ -298,7 +297,7 @@ function action_create_room(): void
         $code = CODE_WORDS[random_int(0, count(CODE_WORDS) - 1)] . '-' . $number;
         try {
             $insert->execute([$code, $token, $deck, time()]);
-            respond(['ok' => true, 'code' => $code, 'caller_token' => $token, 'round' => 1, 'status' => 'lobby']);
+            return ['code' => $code, 'caller_token' => $token, 'round' => 1, 'status' => 'lobby'];
         } catch (PDOException $e) {
             if ($e->getCode() !== '23000') {
                 throw $e;
@@ -306,6 +305,34 @@ function action_create_room(): void
         }
     }
     fail('busy', 'Could not find a free room code. Please try again.', 503);
+    return [];
+}
+
+function action_create_room(): void
+{
+    respond(['ok' => true] + open_room(db()));
+}
+
+/* Deletes the caller's room with all its players and claims, then opens a new room with a new code. */
+function action_reset_room(array $in): void
+{
+    $pdo = db();
+    $code = room_code_in($in);
+    locked(static function (PDO $pdo) use ($code, $in): void {
+        $stmt = $pdo->prepare('SELECT caller_token FROM rooms WHERE code = ?');
+        $stmt->execute([$code]);
+        $token = $stmt->fetchColumn();
+        if ($token === false) {
+            return;
+        }
+        if (!token_ok((string) $token, str_in($in, 'caller_token'))) {
+            fail('not_caller', 'Only the caller of this room can do that.', 403);
+        }
+        $pdo->prepare('DELETE FROM claims WHERE room_code = ?')->execute([$code]);
+        $pdo->prepare('DELETE FROM players WHERE room_code = ?')->execute([$code]);
+        $pdo->prepare('DELETE FROM rooms WHERE code = ?')->execute([$code]);
+    });
+    respond(['ok' => true] + open_room($pdo));
 }
 
 function action_join(array $in): void
@@ -521,6 +548,9 @@ try {
             break;
         case 'claim':
             action_claim($in);
+            break;
+        case 'reset_room':
+            action_reset_room($in);
             break;
         case 'new_game':
             action_new_game($in);

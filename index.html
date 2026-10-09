@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@600;800;900&display=swap">
-<link rel="stylesheet" href="style.css?v=4">
+<link rel="stylesheet" href="style.css?v=5">
 </head>
 <body class="mode-player">
 
@@ -108,7 +108,10 @@
         <h2 class="lobby-players-title"><span data-i18n="players">Jugadores</span> <span class="count-badge" id="lobbyCount">0</span></h2>
         <ul class="chips" id="lobbyPlayers"></ul>
         <p class="muted" id="lobbyEmpty" data-i18n="no_players">Esperando jugadores...</p>
-        <button id="startBtn" class="big-btn pink" type="button" data-i18n="start">¡Empezar!</button>
+        <div class="lobby-actions">
+          <button id="startBtn" class="big-btn pink" type="button" data-i18n="start">¡Empezar!</button>
+          <button id="lobbyResetBtn" class="pill-btn ghost" type="button" data-i18n="reset">Reiniciar</button>
+        </div>
       </div>
       <div class="lobby-qr">
         <div class="qr-box" id="qrBox"></div>
@@ -129,7 +132,7 @@
         <div class="call-actions">
           <button id="nextBtn" class="big-btn pink huge" type="button" data-i18n="next_card">Siguiente carta</button>
           <button id="newGameBtn" class="pill-btn ghost" type="button" data-i18n="new_game">Nuevo juego</button>
-          <button id="newRoomBtn" class="pill-btn ghost" type="button" hidden data-i18n="new_room">Sala nueva</button>
+          <button id="resetBtn" class="pill-btn ghost" type="button" data-i18n="reset">Reiniciar</button>
         </div>
         <p class="muted call-meta"><span id="callPlayers"></span> · <span id="callRoom"></span></p>
       </div>
@@ -153,7 +156,10 @@
           <span data-i18n="play_again">Otra ronda</span>
           <small data-i18n="play_again_sub">Mismos jugadores, tableros nuevos</small>
         </button>
-        <button id="winNewRoom" class="big-btn turq" type="button" data-i18n="new_room">Sala nueva</button>
+        <button id="winReset" class="big-btn turq" type="button">
+          <span data-i18n="reset">Reiniciar</span>
+          <small data-i18n="reset_sub">Sala y código nuevos</small>
+        </button>
       </div>
       <button id="winClose" class="pill-btn" type="button" data-i18n="close">Cerrar</button>
     </div>
@@ -729,6 +735,6 @@
 })();
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
-<script src="app.js?v=4" defer></script>
+<script src="app.js?v=5" defer></script>
 </body>
 </html>

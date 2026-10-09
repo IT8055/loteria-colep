@@ -4,13 +4,13 @@
  * offline fallback. Fonts and the QR library are cache first. api.php is never cached.
  * Bump VERSION on every release to clear old caches.
  */
-const VERSION = '1.3.0';
+const VERSION = '1.4.0';
 const CACHE = 'loteria-colep-' + VERSION;
 const SHELL = [
   './',
   'index.html',
-  'style.css?v=4',
-  'app.js?v=4',
+  'style.css?v=5',
+  'app.js?v=5',
   'manifest.webmanifest',
   'icons/icon.svg',
   'icons/icon-192.png',

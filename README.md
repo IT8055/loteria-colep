@@ -13,8 +13,9 @@ Live: https://walker-jones.eu/dev/loteria/
    clicker works too: Right arrow, Page Down, Space and Enter all call the next card.
 4. Players tap called cards to place a frijol, then press **¡Lotería!** when they have a full row,
    column or diagonal. The server checks the board.
-5. When someone wins, the caller chooses **Otra ronda / Play again** (same players, new boards)
-   or **Sala nueva / New room** (a new code to scan).
+5. When someone wins, the caller chooses **Otra ronda / Play again** (same players, new boards).
+6. **Reiniciar / Reset**, available at any time, deletes the room and its players and opens a new
+   room with a new code to scan.
 
 The **?** button in the header (and the "¿Cómo se juega? / How to play" link) opens the rules in
 Spanish or English. Each player picks their own language with the ES/EN toggle. The verse is read aloud
